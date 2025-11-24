@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador Gigante</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2; /* Cinza claro */
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #f44336; /* Vermelho */
+            padding: 20px 0;
+            text-align: center;
+            color: white;
+        }
+        .contador {
+            text-align: center;
+            font-size: 10rem;
+            font-weight: bold;
+            color: #333;
+            margin-top: 50px;
+        }
+        .container-botoes {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        button {
+            background-color: #f44336; /* Vermelho */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #d32f2f; /* Vermelho mais escuro */
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Trafego de Alunos</h1>
+</header>
+
+<div class="contador" id="contador">
+    0
+</div>
+
+<div class="container-botoes">
+    <button id="iniciarBtn" onclick="iniciarExpediente()">Iniciar Expediente</button>
+    <button id="pausarBtn" onclick="pausarExpediente()" disabled>Pausar</button>
+    <button id="encerrarBtn" onclick="encerrarExpediente()" disabled>Encerrar Expediente</button>
+    <button id="baixarBtn" onclick="baixarArquivo()">Baixar Registros</button>
+</div>
+
+<footer>
+    <p>Contador controlado via ESP32</p>
+</footer>
+
+<script>
+    let contador = 0;
+    let expedienteAtivo = false;
+    let registros = [];
+
+    // ===============================
+    // 🔗 WEBSOCKET COM O ESP32
+    // ===============================
+
+    // Troque ESTE IP pelo que aparece no monitor serial do ESP32!
+    const socket = new WebSocket('ws://192.168.0.150:8080');
+
+    socket.onopen = function() {
+        console.log('Conectado ao ESP32 via WebSocket');
+    };
+
+    socket.onmessage = function(event) {
+        // Recebe o JSON enviado pelo ESP32
+        const dadosArduino = JSON.parse(event.data);
+
+        if (dadosArduino.contagem !== undefined && expedienteAtivo) {
+            contador = dadosArduino.contagem;
+            document.getElementById('contador').innerText = contador;
+
+            // salva registro com horário
+            registros.push({
+                data: new Date().toLocaleString(),
+                contador: contador
+            });
+        }
+    };
+
+    // ===============================
+    // ⏱ CONTROLE DO EXPEDIENTE
+    // ===============================
+
+    function iniciarExpediente() {
+        if (!expedienteAtivo) {
+            expedienteAtivo = true;
+            contador = 0;
+            document.getElementById('contador').innerText = contador;
+            registros = [];
+
+            document.getElementById('iniciarBtn').disabled = true;
+            document.getElementById('pausarBtn').disabled = false;
+            document.getElementById('encerrarBtn').disabled = false;
+        }
+    }
+
+    function pausarExpediente() {
+        expedienteAtivo = false;
+        document.getElementById('iniciarBtn').disabled = false;
+        document.getElementById('pausarBtn').disabled = true;
+    }
+
+    function encerrarExpediente() {
+        expedienteAtivo = false;
+        document.getElementById('iniciarBtn').disabled = false;
+        document.getElementById('pausarBtn').disabled = true;
+        document.getElementById('encerrarBtn').disabled = true;
+    }
+
+    // ===============================
+    // 📥 BAIXAR ARQUIVO XLSX
+    // ===============================
+
+    function baixarArquivo() {
+        const worksheet = XLSX.utils.json_to_sheet(registros);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+        XLSX.writeFile(workbook, "registros.xlsx");
+    }
+</script>
+
+<!-- Biblioteca Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+</body>
+</html>
