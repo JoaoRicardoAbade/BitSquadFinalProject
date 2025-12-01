@@ -1,5 +1,7 @@
 #define TRIG 2
 #define ECHO 3
+#define LED_PIN 4  // Definindo o pino do LED
+#define PIEZO_PIN 5 // Definindo o pino do Piezo
 
 long distancia;
 int entradas = 0;
@@ -21,6 +23,8 @@ void setup() {
   Serial.begin(9600);
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
+  pinMode(LED_PIN, OUTPUT);     // Definindo o pino do LED como saída
+  pinMode(PIEZO_PIN, OUTPUT);   // Definindo o pino do Piezo como saída
 
   Serial.println("Contador de Entradas Iniciado");
 }
@@ -32,7 +36,17 @@ void loop() {
     entradas++;
     Serial.print("Entrada detectada! Total: ");
     Serial.println(entradas);
+
+    // Acende o LED quando uma entrada é detectada
+    digitalWrite(LED_PIN, HIGH);
+    
+    // Emite um som com o piezo
+    tone(PIEZO_PIN, 1000, 200); // 1000Hz por 200ms
+    
     delay(1500);  // espera a pessoa sair
+
+    // Desliga o LED após o tempo de espera
+    digitalWrite(LED_PIN, LOW);
   }
 
   delay(100);
