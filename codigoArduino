@@ -1,23 +1,9 @@
-#include <WiFi.h>
-#include <MySQL_Connection.h>
-#include <MySQL_Cursor.h>
-
-// Configurações do Wi-Fi
-const char* ssid = "SEU_SSID";
-const char* password = "SUA_SENHA";
-
-// Configurações do banco de dados MySQL
-IPAddress server_ip(192, 168, 1, 100); // IP do servidor MySQL (pode ser localhost ou IP do servidor)
-char user[] = "usuario";  // Usuário do banco
-char pass[] = "senha";    // Senha do banco
-
-WiFiClient client;
-MySQL_Connection conn((Client *)&client);
+#define TRIG 2
+#define ECHO 3
 
 long distancia;
 int entradas = 0;
 
-// Função para medir a distância
 long medirDistancia() {
   digitalWrite(TRIG, LOW);
   delayMicroseconds(5);
@@ -36,37 +22,16 @@ void setup() {
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
 
-  // Conexão com o Wi-Fi
-  Serial.print("Conectando ao Wi-Fi");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
-  }
-  Serial.println("Conectado ao Wi-Fi!");
-
-  // Conexão com o banco de dados MySQL
-  if (conn.connect(server_ip, 3306, user, pass)) {
-    Serial.println("Conectado ao banco de dados MySQL!");
-  } else {
-    Serial.println("Falha na conexão com o banco de dados.");
-  }
+  Serial.println("Contador de Entradas Iniciado");
 }
 
 void loop() {
   distancia = medirDistancia();
 
-  if (distancia < 40) {
+  if (distancia < 40) {    
     entradas++;
-    Serial.print("Entrada detectada! Total de entradas: ");
+    Serial.print("Entrada detectada! Total: ");
     Serial.println(entradas);
-
-    // Enviar os dados para o MySQL
-    String query = "INSERT INTO fluxo_pessoas (entradas) VALUES ('" + String(entradas) + "')";
-    MySQL_Cursor* cursor = new MySQL_Cursor(&conn);
-    cursor->execute(query.c_str());
-    delete cursor;
-
     delay(1500);  // espera a pessoa sair
   }
 
